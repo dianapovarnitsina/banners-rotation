@@ -1,0 +1,18 @@
+logger:
+  logger_level: debug
+  logger_development: true
+
+grpc:
+  host: "localhost"
+  port: 8082
+
+storage:
+#  migration: "/etc/migrations"
+  migration: "migrations"
+
+database:
+  host: "localhost"
+  port: 5432
+  dbname: "postgres"
+  username: "postgres"
+  password: "postgres"
