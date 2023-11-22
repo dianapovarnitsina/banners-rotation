@@ -13,8 +13,7 @@ type BannerConfig struct {
 	GRPC     GRPC         `json:"grpc"`
 	Storage  StorageConf  `json:"storage"`
 	RMQ      RMQ          `json:"rmq"`
-
-	Queues struct {
+	Queues   struct {
 		Events Queue
 	}
 }
