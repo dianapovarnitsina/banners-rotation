@@ -3,10 +3,10 @@ package internalgrpc
 import (
 	"context"
 	"fmt"
-	"github.com/dianapovarnitsina/banners-rotation/internal/logger"
 	"strings"
 	"time"
 
+	"github.com/dianapovarnitsina/banners-rotation/internal/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"

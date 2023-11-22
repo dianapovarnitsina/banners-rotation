@@ -14,9 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	bannerConfigFile string
-)
+var bannerConfigFile string
 
 func init() {
 	flag.StringVar(&bannerConfigFile, "config", "banner_config.yaml", "Path to configuration file")

@@ -30,7 +30,7 @@ func NewApp(ctx context.Context, conf *config.BannerConfig) (*App, error) {
 	logger := logger.New(conf.Logger.Level, os.Stdout)
 	app.logger = logger
 
-	//Инициализация хранилища данных.
+	// Инициализация хранилища данных.
 	psqlStorage := new(sql.Storage)
 	if err := psqlStorage.Connect(
 		ctx,
@@ -68,7 +68,7 @@ func NewApp(ctx context.Context, conf *config.BannerConfig) (*App, error) {
 		logger.Error("RMQ initialization failed: %v", err)
 	}
 
-	//Инициализация gRPC-сервера.
+	// Инициализация gRPC-сервера.
 	app.serverGRPC = grpc.NewServer(
 		grpc.UnaryInterceptor(internalgrpc.NewLoggingInterceptor(logger).UnaryServerInterceptor),
 	)

@@ -85,8 +85,16 @@ func TestClickBanner(t *testing.T) {
 
 	mock.ExpectQuery("INSERT INTO clicks").
 		WithArgs(2, 3, 1).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "slot_id", "banner_id", "usergroup_id", "created_at"}).
-			AddRow(expectedClick.ID, expectedClick.SlotID, expectedClick.BannerID, expectedClick.UserGroupID, expectedClick.CreatedAt))
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "slot_id", "banner_id", "usergroup_id", "created_at"}).
+				AddRow(
+					expectedClick.ID,
+					expectedClick.SlotID,
+					expectedClick.BannerID,
+					expectedClick.UserGroupID,
+					expectedClick.CreatedAt,
+				),
+		)
 
 	ctx := context.Background()
 
@@ -130,8 +138,16 @@ func TestImpressBanner(t *testing.T) {
 
 	mock.ExpectQuery("INSERT INTO impressions").
 		WithArgs(2, 3, 1).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "slot_id", "banner_id", "usergroup_id", "created_at"}).
-			AddRow(expectedImpress.ID, expectedImpress.SlotID, expectedImpress.BannerID, expectedImpress.UserGroupID, expectedImpress.CreatedAt))
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "slot_id", "banner_id", "usergroup_id", "created_at"}).
+				AddRow(
+					expectedImpress.ID,
+					expectedImpress.SlotID,
+					expectedImpress.BannerID,
+					expectedImpress.UserGroupID,
+					expectedImpress.CreatedAt,
+				),
+		)
 
 	ctx := context.Background()
 
@@ -186,8 +202,16 @@ func TestPickBanner(t *testing.T) {
 
 	mock.ExpectQuery("INSERT INTO impressions").
 		WithArgs(expectedSlotID, expectedBannerID, expectedUserGroupID).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "slot_id", "banner_id", "usergroup_id", "created_at"}).
-			AddRow(expectedImpress.ID, expectedImpress.SlotID, expectedImpress.BannerID, expectedImpress.UserGroupID, expectedImpress.CreatedAt))
+		WillReturnRows(
+			sqlmock.NewRows([]string{"id", "slot_id", "banner_id", "usergroup_id", "created_at"}).
+				AddRow(
+					expectedImpress.ID,
+					expectedImpress.SlotID,
+					expectedImpress.BannerID,
+					expectedImpress.UserGroupID,
+					expectedImpress.CreatedAt,
+				),
+		)
 
 	ctx := context.Background()
 

@@ -5,16 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/dianapovarnitsina/banners-rotation/internal/multiarmedbandit"
 	"github.com/dianapovarnitsina/banners-rotation/internal/storage"
-	"github.com/pressly/goose/v3"
-
 	_ "github.com/lib/pq" // Blank import for side effects
+	"github.com/pressly/goose/v3"
 )
 
-var (
-	errNoBannersForGivenSlot = errors.New("no banners for a given slot")
-)
+var errNoBannersForGivenSlot = errors.New("no banners for a given slot")
 
 type Storage struct {
 	db *sql.DB
@@ -46,6 +44,7 @@ func (s *Storage) Connect(ctx context.Context, dbPort int, dbHost, dbUser, dbPas
 }
 
 func (s *Storage) Close(ctx context.Context) error {
+	_ = ctx
 	err := s.db.Close()
 	if err != nil {
 		return err
@@ -193,14 +192,14 @@ func (s *Storage) SlotExists(ctx context.Context, slotID int) bool {
 	return count > 0
 }
 
-func (s *Storage) UserGroupExists(ctx context.Context, userGroupId int) bool {
+func (s *Storage) UserGroupExists(ctx context.Context, userGroupID int) bool {
 	const query = `
       SELECT COUNT(*)
       FROM usergroups
       WHERE id = $1;`
 
 	var count int
-	err := s.db.QueryRowContext(ctx, query, userGroupId).Scan(&count)
+	err := s.db.QueryRowContext(ctx, query, userGroupID).Scan(&count)
 	if err != nil {
 		return false
 	}

@@ -51,7 +51,7 @@ func (s *ServiceServer) AddBanner(ctx context.Context, req *pb.AddBannerRequest)
 		return nil, status.Errorf(codes.AlreadyExists, "banner is already assigned to the slot")
 	}
 
-	//добавление записи
+	// Добавление записи
 	if err := s.storage.AddBanner(ctx, bannerID, slotID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to add banner: %v", err)
 	}
@@ -71,11 +71,14 @@ func (s *ServiceServer) slotExists(ctx context.Context, slotID int) bool {
 	return s.storage.SlotExists(ctx, slotID)
 }
 
-func (s *ServiceServer) userGroupExists(ctx context.Context, userGroupId int) bool {
-	return s.storage.UserGroupExists(ctx, userGroupId)
+func (s *ServiceServer) userGroupExists(ctx context.Context, userGroupID int) bool {
+	return s.storage.UserGroupExists(ctx, userGroupID)
 }
 
-func (s *ServiceServer) RemoveBanner(ctx context.Context, req *pb.RemoveBannerRequest) (*pb.RemoveBannerResponse, error) {
+func (s *ServiceServer) RemoveBanner(
+	ctx context.Context,
+	req *pb.RemoveBannerRequest,
+) (*pb.RemoveBannerResponse, error) {
 	if err := s.storage.RemoveBanner(ctx, int(req.GetBannerId()), int(req.GetSlotId())); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to remove banner: %v", err)
 	}
@@ -85,7 +88,7 @@ func (s *ServiceServer) RemoveBanner(ctx context.Context, req *pb.RemoveBannerRe
 func (s *ServiceServer) ClickBanner(ctx context.Context, req *pb.ClickBannerRequest) (*pb.ClickBannerResponse, error) {
 	bannerID := int(req.GetBannerId())
 	slotID := int(req.GetSlotId())
-	userGroupId := int(req.GetUsergroupId())
+	userGroupID := int(req.GetUsergroupId())
 
 	// Проверка на несуществующий баннер
 	if !s.bannerExists(ctx, bannerID) {
@@ -98,11 +101,11 @@ func (s *ServiceServer) ClickBanner(ctx context.Context, req *pb.ClickBannerRequ
 	}
 
 	// Проверка на несуществующий группу
-	if !s.userGroupExists(ctx, userGroupId) {
+	if !s.userGroupExists(ctx, userGroupID) {
 		return nil, status.Errorf(codes.NotFound, "specified userGroup does not exist")
 	}
 
-	click, err := s.storage.ClickBanner(ctx, bannerID, slotID, userGroupId)
+	click, err := s.storage.ClickBanner(ctx, bannerID, slotID, userGroupID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to click banner: %v", err)
 	}
@@ -119,9 +122,9 @@ func (s *ServiceServer) ClickBanner(ctx context.Context, req *pb.ClickBannerRequ
 
 func (s *ServiceServer) PickBanner(ctx context.Context, req *pb.PickBannerRequest) (*pb.PickBannerResponse, error) {
 	slotID := int(req.GetSlotId())
-	userGroupId := int(req.GetUsergroupId())
+	userGroupID := int(req.GetUsergroupId())
 
-	impress, bannerID, err := s.storage.PickBanner(ctx, slotID, userGroupId)
+	impress, bannerID, err := s.storage.PickBanner(ctx, slotID, userGroupID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to pick banner: %v", err)
 	}
@@ -150,28 +153,32 @@ func (s *ServiceServer) sendNotification(notification storage.Notification) erro
 		return err
 	}
 
-	s.logger.Info("Sent a notification to queue RabbitMQ: %s %s", string(notificationJSON), time.Now().Format("2006-01-02 15:04"))
+	s.logger.Info(
+		"Sent a notification to queue RabbitMQ: %s %s",
+		string(notificationJSON),
+		time.Now().Format("2006-01-02 15:04"),
+	)
 	return nil
 }
 
-func createClickNotification(сlick *storage.Click) storage.Notification {
+func createClickNotification(click *storage.Click) storage.Notification {
 	notification := storage.Notification{
 		TypeEvent:   "click",
-		SlotId:      сlick.SlotID,
-		BannerId:    сlick.BannerID,
-		UsergroupId: сlick.UserGroupID,
-		DateTime:    сlick.CreatedAt,
+		SlotID:      click.SlotID,
+		BannerID:    click.BannerID,
+		UsergroupID: click.UserGroupID,
+		DateTime:    click.CreatedAt,
 	}
 	return notification
 }
 
-func createImpressNotification(сlick *storage.Impress) storage.Notification {
+func createImpressNotification(impress *storage.Impress) storage.Notification {
 	notification := storage.Notification{
 		TypeEvent:   "impress",
-		SlotId:      сlick.SlotID,
-		BannerId:    сlick.BannerID,
-		UsergroupId: сlick.UserGroupID,
-		DateTime:    сlick.CreatedAt,
+		SlotID:      impress.SlotID,
+		BannerID:    impress.BannerID,
+		UsergroupID: impress.UserGroupID,
+		DateTime:    impress.CreatedAt,
 	}
 	return notification
 }

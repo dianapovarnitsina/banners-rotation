@@ -38,7 +38,7 @@ func PickBanner(banners []Banner) int {
 	return selectedBannerID
 }
 
-// calculateRating вычисляет рейтинг баннера
+// calculateRating вычисляет рейтинг баннера.
 func calculateRating(clicks, impressions, totalImpressions float64) float64 {
 	if impressions == 0 {
 		impressions = 1

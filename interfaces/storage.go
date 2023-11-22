@@ -17,5 +17,5 @@ type Storage interface {
 	IsBannerAssignedToSlot(ctx context.Context, bannerID, slotID int) (bool, error)
 	BannerExists(ctx context.Context, bannerID int) bool
 	SlotExists(ctx context.Context, slotID int) bool
-	UserGroupExists(ctx context.Context, userGroupId int) bool
+	UserGroupExists(ctx context.Context, userGroupID int) bool
 }
