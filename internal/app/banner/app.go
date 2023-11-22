@@ -3,25 +3,25 @@ package banner
 import (
 	"context"
 	"fmt"
-	"github.com/dianapovarnitsina/banners-rotation/internal/server/pb"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/dianapovarnitsina/banners-rotation/interfaces"
 	"github.com/dianapovarnitsina/banners-rotation/internal/config"
 	"github.com/dianapovarnitsina/banners-rotation/internal/logger"
+	"github.com/dianapovarnitsina/banners-rotation/internal/rmq"
 	internalgrpc "github.com/dianapovarnitsina/banners-rotation/internal/server/grpc"
+	"github.com/dianapovarnitsina/banners-rotation/internal/server/pb"
 	"github.com/dianapovarnitsina/banners-rotation/internal/storage/sql"
 	"google.golang.org/grpc"
 )
 
 type App struct {
-	logger       interfaces.Logger
-	storage      interfaces.Storage
-	serverGRPC   *grpc.Server
-	grpcShutdown chan struct{} // Канал для сигнала завершения gRPC сервера
-	//queue       Queue
-	//eventsQueue string
+	logger     interfaces.Logger
+	storage    interfaces.Storage
+	serverGRPC *grpc.Server
 }
 
 func NewApp(ctx context.Context, conf *config.BannerConfig) (*App, error) {
@@ -48,29 +48,56 @@ func NewApp(ctx context.Context, conf *config.BannerConfig) (*App, error) {
 	}
 	app.storage = psqlStorage
 
+	// Инициализация RMQ.
+	eventsProdMq, err := rmq.New(
+		conf.RMQ.URI,
+		conf.Queues.Events.ExchangeName,
+		conf.Queues.Events.ExchangeType,
+		conf.Queues.Events.QueueName,
+		conf.Queues.Events.BindingKey,
+		conf.RMQ.ReConnect.MaxElapsedTime,
+		conf.RMQ.ReConnect.InitialInterval,
+		conf.RMQ.ReConnect.Multiplier,
+		conf.RMQ.ReConnect.MaxInterval,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize RMQ for scheduler: %w", err)
+	}
+
+	if err := eventsProdMq.Init(ctx); err != nil {
+		logger.Error("RMQ initialization failed: %v", err)
+	}
+
 	//Инициализация gRPC-сервера.
 	app.serverGRPC = grpc.NewServer(
 		grpc.UnaryInterceptor(internalgrpc.NewLoggingInterceptor(logger).UnaryServerInterceptor),
 	)
 
-	api := internalgrpc.NewEventServiceServer(app.storage)
+	api := internalgrpc.NewEventServiceServer(app.storage, eventsProdMq, logger)
 	pb.RegisterBannerServiceServer(app.serverGRPC, api)
 
 	grpcListener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", conf.GRPC.Host, conf.GRPC.Port))
 	if err != nil {
 		logger.Error("Failed to listen: %v", err)
 	}
+
 	go func() {
 		logger.Info("Starting gRPC server on port %s", fmt.Sprintf("%s:%d", conf.GRPC.Host, conf.GRPC.Port))
 		if err := app.serverGRPC.Serve(grpcListener); err != nil {
 			logger.Error("gRPC server failed: %v", err)
 		}
-		close(app.grpcShutdown) // Отправляем сигнал о завершении работы gRPC сервера.
+	}()
+
+	// Ожидание сигнала завершения работы сервера.
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		<-sigChan
+
+		// Получен сигнал завершения - остановка gRPC-сервера.
+		app.serverGRPC.GracefulStop()
+		logger.Info("gRPC server stopped")
 	}()
 
 	return app, nil
-}
-
-func (a *App) GetGrpcServerShutdownSignal() <-chan struct{} {
-	return a.grpcShutdown
 }

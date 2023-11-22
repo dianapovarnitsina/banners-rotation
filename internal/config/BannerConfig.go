@@ -12,6 +12,11 @@ type BannerConfig struct {
 	Database DataBaseConf `json:"database"`
 	GRPC     GRPC         `json:"grpc"`
 	Storage  StorageConf  `json:"storage"`
+	RMQ      RMQ          `json:"rmq"`
+
+	Queues struct {
+		Events Queue
+	}
 }
 
 func (b *BannerConfig) Init(file string) error {

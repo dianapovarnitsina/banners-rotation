@@ -33,6 +33,23 @@ type GRPC struct {
 	Port int    `json:"port"`
 }
 
+type RMQ struct {
+	URI       string `json:"uri"`
+	ReConnect struct {
+		MaxElapsedTime  string  `json:"maxElapsedTime"`
+		InitialInterval string  `json:"initialInterval"`
+		Multiplier      float64 `json:"multiplier"`
+		MaxInterval     string  `json:"maxInterval"`
+	}
+}
+
+type Queue struct {
+	ExchangeName string `json:"exchangeName"`
+	ExchangeType string `json:"exchangeType"`
+	QueueName    string `json:"queueName"`
+	BindingKey   string `json:"bindingKey"` // Message routing rules
+}
+
 func Init(file string, c Configure) (Configure, error) {
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

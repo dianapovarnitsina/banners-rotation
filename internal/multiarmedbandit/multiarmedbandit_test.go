@@ -111,6 +111,33 @@ func TestPickBanner(t *testing.T) {
 			},
 			want: 1,
 		},
+		{
+			name: "multiple banners have the same number of impressions and clicks, pick the first one",
+			banners: []Banner{
+				&bnr{ID: 1, impressions: 50, clicks: 10},
+				&bnr{ID: 2, impressions: 50, clicks: 10},
+				&bnr{ID: 3, impressions: 50, clicks: 10},
+			},
+			want: 1,
+		},
+		{
+			name: "one banner has more impressions than others but fewer clicks, prioritize clicks",
+			banners: []Banner{
+				&bnr{ID: 1, impressions: 1000, clicks: 50},
+				&bnr{ID: 2, impressions: 1500, clicks: 60},
+				&bnr{ID: 3, impressions: 800, clicks: 100},
+			},
+			want: 3,
+		},
+		{
+			name: "one banner has more clicks than others but fewer impressions, prioritize impressions",
+			banners: []Banner{
+				&bnr{ID: 1, impressions: 300, clicks: 100},
+				&bnr{ID: 2, impressions: 500, clicks: 200},
+				&bnr{ID: 3, impressions: 200, clicks: 50},
+			},
+			want: 2,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

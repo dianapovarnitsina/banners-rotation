@@ -4,16 +4,18 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/dianapovarnitsina/banners-rotation/internal/app/banner"
 	"github.com/dianapovarnitsina/banners-rotation/internal/config"
 	"github.com/pkg/errors"
-	"log"
-	"sync"
 )
 
 var (
 	bannerConfigFile string
-	wg               sync.WaitGroup
 )
 
 func init() {
@@ -27,7 +29,9 @@ func main() {
 }
 
 func mainImpl() error {
-	ctx := context.TODO()
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
 	flag.Parse()
 
 	if bannerConfigFile == "" {
@@ -39,19 +43,14 @@ func mainImpl() error {
 		return errors.Wrap(err, "init config failed")
 	}
 
-	app, err := banner.NewApp(ctx, conf)
+	_, err := banner.NewApp(ctx, conf)
 	if err != nil {
 		return fmt.Errorf("failed to create bannerApp: %w", err)
 	}
 
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		<-app.GetGrpcServerShutdownSignal()
-	}()
-
-	wg.Wait()
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
 
 	return nil
 }

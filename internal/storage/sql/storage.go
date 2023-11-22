@@ -76,31 +76,34 @@ func (s *Storage) RemoveBanner(ctx context.Context, bannerID, slotID int) error 
 	return nil
 }
 
-func (s *Storage) ClickBanner(ctx context.Context, bannerID, slotID, userGroupID int) error {
+func (s *Storage) ClickBanner(ctx context.Context, bannerID, slotID, userGroupID int) (*storage.Click, error) {
 	const query = `
 		INSERT INTO clicks (slot_id, banner_id, usergroup_id, created_at) 
-		VALUES ($1, $2, $3, NOW());`
+		VALUES ($1, $2, $3, NOW())
+		RETURNING id, slot_id, banner_id, usergroup_id, created_at;`
 
-	_, err := s.db.ExecContext(ctx, query, slotID, bannerID, userGroupID)
+	click := &storage.Click{}
+	err := s.db.QueryRowContext(ctx, query, slotID, bannerID, userGroupID).
+		Scan(&click.ID, &click.SlotID, &click.BannerID, &click.UserGroupID, &click.CreatedAt)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return click, nil
 }
 
-func (s *Storage) PickBanner(ctx context.Context, slotID, usergroupID int) (int, error) {
+func (s *Storage) PickBanner(ctx context.Context, slotID, usergroupID int) (*storage.Impress, int, error) {
 	const query = `
 		SELECT
 			r.banner_id,
 			(SELECT COUNT(*) FROM impressions i WHERE i.banner_id = r.banner_id AND i.usergroup_id = $1) AS impressions,
-			(SELECT COUNT(*) FROM clicks c WHERE c.banner_id = r.banner_id AND c.usergroup_id = $2) AS clicks
+			(SELECT COUNT(*) FROM clicks c WHERE c.banner_id = r.banner_id AND c.usergroup_id = $1) AS clicks
 		FROM rotations r
-		WHERE r.slot_id = $3;`
+		WHERE r.slot_id = $2;`
 
-	rows, err := s.db.QueryContext(ctx, query, usergroupID, usergroupID, slotID)
+	rows, err := s.db.QueryContext(ctx, query, usergroupID, slotID)
 	if err != nil {
-		return 0, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -108,31 +111,40 @@ func (s *Storage) PickBanner(ctx context.Context, slotID, usergroupID int) (int,
 	for rows.Next() {
 		var bnr storage.BannerStatistics
 		if err := rows.Scan(&bnr.BannerID, &bnr.Impressions, &bnr.Clicks); err != nil {
-			return 0, err
+			return nil, 0, err
 		}
 		banners = append(banners, &bnr)
 	}
 
 	if len(banners) == 0 {
-		return 0, errNoBannersForGivenSlot
+		return nil, 0, errNoBannersForGivenSlot
 	}
 
 	bannerID := multiarmedbandit.PickBanner(banners)
-	if err := s.ImpressBanner(ctx, bannerID, slotID, usergroupID); err != nil {
-		return 0, err
+
+	impress, err := s.ImpressBanner(ctx, bannerID, slotID, usergroupID)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	return bannerID, nil
+	return impress, bannerID, nil
 }
 
-func (s *Storage) ImpressBanner(ctx context.Context, bannerID, slotID, userGroupID int) error {
+func (s *Storage) ImpressBanner(ctx context.Context, bannerID, slotID, userGroupID int) (*storage.Impress, error) {
 	const query = `
 		INSERT INTO impressions
 		(slot_id, banner_id, usergroup_id, created_at) VALUES
-		($1, $2, $3, NOW());`
+		($1, $2, $3, NOW())
+		RETURNING id, slot_id, banner_id, usergroup_id, created_at;`
 
-	_, err := s.db.ExecContext(ctx, query, slotID, bannerID, userGroupID)
-	return err
+	impress := &storage.Impress{}
+	err := s.db.QueryRowContext(ctx, query, slotID, bannerID, userGroupID).
+		Scan(&impress.ID, &impress.SlotID, &impress.BannerID, &impress.UserGroupID, &impress.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return impress, err
 }
 
 func (s *Storage) IsBannerAssignedToSlot(ctx context.Context, bannerID, slotID int) (bool, error) {

@@ -4,11 +4,11 @@ DOCKER_IMG="banner:develop"
 GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
 
-build-api:
+build:
 	go build -v -o $(API_BIN) -ldflags "$(LDFLAGS)" ./cmd/banner
 
 
-run-api: build-api
+run: build
 	$(API_BIN) -config ./configs/banner_config.yaml
 
 
@@ -17,6 +17,8 @@ install-lint-deps:
 
 lint: install-lint-deps
 	golangci-lint run ./...
+
+.PHONY: build run build-img run-img version test lint
 
 generate:
 	rm -rf internal/server/pb
@@ -27,6 +29,16 @@ generate:
         --go_out=internal/server/pb \
         --go-grpc_out=internal/server/pb \
         api/*.proto
+
+test:
+	go test -race ./internal/...
+
+build-img:
+	docker build \
+		--build-arg=LDFLAGS="$(LDFLAGS)" \
+		-t $(DOCKER_IMG) \
+		-f build/banner/Dockerfile .
+
 
 
 

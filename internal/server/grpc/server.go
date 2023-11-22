@@ -2,20 +2,31 @@ package internalgrpc
 
 import (
 	"context"
+	"encoding/json"
+	"time"
+
 	"github.com/dianapovarnitsina/banners-rotation/interfaces"
+	"github.com/dianapovarnitsina/banners-rotation/internal/logger"
+	"github.com/dianapovarnitsina/banners-rotation/internal/rmq"
 	"github.com/dianapovarnitsina/banners-rotation/internal/server/pb"
+	"github.com/dianapovarnitsina/banners-rotation/internal/storage"
+	"github.com/streadway/amqp"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type ServiceServer struct {
-	storage interfaces.Storage
+	storage      interfaces.Storage
+	eventsProdMq *rmq.Rmq
+	logger       *logger.Logger
 	pb.UnimplementedBannerServiceServer
 }
 
-func NewEventServiceServer(storage interfaces.Storage) *ServiceServer {
+func NewEventServiceServer(storage interfaces.Storage, eventsProdMq *rmq.Rmq, log *logger.Logger) *ServiceServer {
 	return &ServiceServer{
-		storage: storage,
+		storage:      storage,
+		eventsProdMq: eventsProdMq,
+		logger:       log,
 	}
 }
 
@@ -91,8 +102,17 @@ func (s *ServiceServer) ClickBanner(ctx context.Context, req *pb.ClickBannerRequ
 		return nil, status.Errorf(codes.NotFound, "specified userGroup does not exist")
 	}
 
-	if err := s.storage.ClickBanner(ctx, bannerID, slotID, userGroupId); err != nil {
+	click, err := s.storage.ClickBanner(ctx, bannerID, slotID, userGroupId)
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to click banner: %v", err)
+	}
+
+	// Отправка уведомления в очередь
+	notification := createClickNotification(click)
+	err = s.sendNotification(notification)
+
+	if err != nil {
+		s.logger.Error("Failed to RMQ: %v", err)
 	}
 	return &pb.ClickBannerResponse{Message: "Banner clicked successfully"}, nil
 }
@@ -101,9 +121,74 @@ func (s *ServiceServer) PickBanner(ctx context.Context, req *pb.PickBannerReques
 	slotID := int(req.GetSlotId())
 	userGroupId := int(req.GetUsergroupId())
 
-	bannerID, err := s.storage.PickBanner(ctx, slotID, userGroupId)
+	impress, bannerID, err := s.storage.PickBanner(ctx, slotID, userGroupId)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to pick banner: %v", err)
 	}
+
+	// Отправка уведомления в очередь
+	notification := createImpressNotification(impress)
+	err = s.sendNotification(notification)
+
+	if err != nil {
+		s.logger.Error("Failed to RMQ: %v", err)
+	}
+
 	return &pb.PickBannerResponse{BannerId: int32(bannerID), Message: "Banner picked successfully"}, nil
+}
+
+func (s *ServiceServer) sendNotification(notification storage.Notification) error {
+	notificationJSON, err := serializeNotification(notification)
+	if err != nil {
+		s.logger.Error("Failed to serialize notification: %v", err)
+		return err
+	}
+
+	err = publishNotificationToRMQ(notificationJSON, s.eventsProdMq)
+	if err != nil {
+		s.logger.Error("Failed to publish notification to RMQ: %v", err)
+		return err
+	}
+
+	s.logger.Info("Sent a notification to queue RabbitMQ: %s %s", string(notificationJSON), time.Now().Format("2006-01-02 15:04"))
+	return nil
+}
+
+func createClickNotification(сlick *storage.Click) storage.Notification {
+	notification := storage.Notification{
+		TypeEvent:   "click",
+		SlotId:      сlick.SlotID,
+		BannerId:    сlick.BannerID,
+		UsergroupId: сlick.UserGroupID,
+		DateTime:    сlick.CreatedAt,
+	}
+	return notification
+}
+
+func createImpressNotification(сlick *storage.Impress) storage.Notification {
+	notification := storage.Notification{
+		TypeEvent:   "impress",
+		SlotId:      сlick.SlotID,
+		BannerId:    сlick.BannerID,
+		UsergroupId: сlick.UserGroupID,
+		DateTime:    сlick.CreatedAt,
+	}
+	return notification
+}
+
+func serializeNotification(notification storage.Notification) ([]byte, error) {
+	notificationJSON, err := json.Marshal(notification)
+	if err != nil {
+		return nil, err
+	}
+	return notificationJSON, nil
+}
+
+func publishNotificationToRMQ(notificationJSON []byte, rmq *rmq.Rmq) error {
+	msg := amqp.Publishing{
+		ContentType: "application/json",
+		Body:        notificationJSON,
+	}
+
+	return rmq.Publish(msg)
 }

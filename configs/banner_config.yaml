@@ -16,3 +16,18 @@ database:
   dbname: "postgres"
   username: "postgres"
   password: "postgres"
+
+rmq:
+  uri: "amqp://guest:guest@localhost:5672/"
+  reConnect:
+    maxElapsedTime: "1m"
+    initialInterval: "1s"
+    multiplier: 2
+    maxInterval: "15s"
+
+queues:
+  events:
+    exchangeName: "events"
+    exchangeType: "fanout"
+    queueName: "notifications"
+    bindingKey: ""
