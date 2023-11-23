@@ -31,3 +31,8 @@ queues:
     exchangeType: "fanout"
     queueName: "notifications"
     bindingKey: ""
+
+consumer:
+  consumerTag: "banner_notifications"
+  qosPrefetchCount: 10
+  threads: 4
