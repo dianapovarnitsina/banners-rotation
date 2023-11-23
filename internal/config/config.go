@@ -34,8 +34,12 @@ type GRPC struct {
 }
 
 type RMQ struct {
-	URI       string `json:"uri"`
-	ReConnect struct {
+	RABBITMQ_PROTOCOL string `json:"rabbitmq_protocol"`
+	RABBITMQ_USERNAME string `json:"rabbitmq_username"`
+	RABBITMQ_PASSWORD string `json:"rabbitmq_password"`
+	RABBITMQ_HOST     string `json:"rabbitmq_host"`
+	RABBITMQ_PORT     int    `json:"rabbitmq_port"`
+	ReConnect         struct {
 		MaxElapsedTime  string  `json:"maxElapsedTime"`
 		InitialInterval string  `json:"initialInterval"`
 		Multiplier      float64 `json:"multiplier"`
@@ -48,6 +52,12 @@ type Queue struct {
 	ExchangeType string `json:"exchangeType"`
 	QueueName    string `json:"queueName"`
 	BindingKey   string `json:"bindingKey"` // Message routing rules
+}
+
+type Consumer struct {
+	ConsumerTag      string  `json:"consumerTag"`
+	QosPrefetchCount float64 `json:"qosPrefetchCount"`
+	Threads          float64 `json:"threads"`
 }
 
 func Init(file string, c Configure) (Configure, error) {

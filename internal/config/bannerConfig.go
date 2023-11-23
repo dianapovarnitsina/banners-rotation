@@ -16,6 +16,7 @@ type BannerConfig struct {
 	Queues   struct {
 		Events Queue
 	}
+	Consumer Consumer
 }
 
 func (b *BannerConfig) Init(file string) error {

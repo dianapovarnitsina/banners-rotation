@@ -49,8 +49,17 @@ func NewApp(ctx context.Context, conf *config.BannerConfig) (*App, error) {
 	app.storage = psqlStorage
 
 	// Инициализация RMQ.
+	URI := fmt.Sprintf("%s://%s:%s@%s:%d/", //"amqp://guest:guest@localhost:5672/"
+		conf.RMQ.RABBITMQ_PROTOCOL,
+		conf.RMQ.RABBITMQ_USERNAME,
+		conf.RMQ.RABBITMQ_PASSWORD,
+		conf.RMQ.RABBITMQ_HOST,
+		conf.RMQ.RABBITMQ_PORT,
+	)
+	logger.Info("URI: ", URI)
+
 	eventsProdMq, err := rmq.New(
-		conf.RMQ.URI,
+		URI,
 		conf.Queues.Events.ExchangeName,
 		conf.Queues.Events.ExchangeType,
 		conf.Queues.Events.QueueName,

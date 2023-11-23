@@ -64,7 +64,19 @@ func New(
 }
 
 func (r *Rmq) Init(ctx context.Context) error {
-	if err := r.connect(ctx); err != nil {
+	var err error
+	startTime := time.Now()
+
+	for time.Since(startTime) < 30*time.Second {
+		if err = r.connect(ctx); err == nil {
+			// Подключение успешно, выходим из цикла
+			break
+		}
+		// Если подключение не удалось, ждем немного перед повторной попыткой
+		time.Sleep(1 * time.Second)
+	}
+
+	if err != nil {
 		return errors.Wrap(err, "rmq connection fail")
 	}
 
