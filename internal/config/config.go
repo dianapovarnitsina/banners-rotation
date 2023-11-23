@@ -34,12 +34,12 @@ type GRPC struct {
 }
 
 type RMQ struct {
-	RABBITMQ_PROTOCOL string `json:"rabbitmq_protocol"`
-	RABBITMQ_USERNAME string `json:"rabbitmq_username"`
-	RABBITMQ_PASSWORD string `json:"rabbitmq_password"`
-	RABBITMQ_HOST     string `json:"rabbitmq_host"`
-	RABBITMQ_PORT     int    `json:"rabbitmq_port"`
-	ReConnect         struct {
+	RabbitmqProtocol string `json:"rabbitmq_protocol"` //nolint:tagliatelle
+	RabbitmqUsername string `json:"rabbitmq_username"` //nolint:tagliatelle
+	RabbitmqPassword string `json:"rabbitmq_password"` //nolint:tagliatelle
+	RabbitmqHost     string `json:"rabbitmq_host"`     //nolint:tagliatelle
+	RabbitmqPort     int    `json:"rabbitmq_port"`     //nolint:tagliatelle
+	ReConnect        struct {
 		MaxElapsedTime  string  `json:"maxElapsedTime"`
 		InitialInterval string  `json:"initialInterval"`
 		Multiplier      float64 `json:"multiplier"`
