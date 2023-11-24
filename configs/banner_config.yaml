@@ -1,6 +1,6 @@
 logger:
-  logger_level: debug
-  logger_development: true
+  loggerLevel: debug
+  loggerDevelopment: true
 
 grpc:
   host: "localhost"
@@ -19,12 +19,12 @@ database:
   password: "postgres"
 
 rmq:
-  rabbitmq_protocol: "amqp"
-  rabbitmq_username: "guest"
-  rabbitmq_password: "guest"
-#  rabbitmq_host: "localhost"
-  rabbitmq_host: rabbitmq
-  rabbitmq_port: 5672
+  rabbitmqProtocol: "amqp"
+  rabbitmqUsername: "guest"
+  rabbitmqPassword: "guest"
+#  rabbitmqHost: "localhost"
+  rabbitmqHost: rabbitmq
+  rabbitmqPort: 5672
   reConnect:
     maxElapsedTime: "1m"
     initialInterval: "1s"

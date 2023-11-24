@@ -8,6 +8,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/dianapovarnitsina/banners-rotation/internal/rmq"
 	"github.com/dianapovarnitsina/banners-rotation/internal/server/pb"
 	"github.com/dianapovarnitsina/banners-rotation/internal/storage"
@@ -16,7 +19,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
-	"testing"
 )
 
 type BannerSuite struct {
@@ -32,10 +34,10 @@ func (s *BannerSuite) SetupSuite() {
 	s.ctx = context.TODO()
 
 	// Подключение к БД
-	//host := os.Getenv("GRPC_HOST")
-	//port := os.Getenv("GRPC_PORT")
-	//bannerHost := host + ":" + port
-	bannerHost := ""
+	host := os.Getenv("GRPC_HOST")
+	port := os.Getenv("GRPC_PORT")
+	bannerHost := host + ":" + port
+	//bannerHost := ""
 
 	if bannerHost == "" {
 		bannerHost = "127.0.0.1:8082"
@@ -47,24 +49,20 @@ func (s *BannerSuite) SetupSuite() {
 	s.client = pb.NewBannerServiceClient(s.bannerConn)
 
 	connectionString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		"postgres", "postgres", "localhost", 5432, "postgres")
-	//"postgres", "postgres", os.Getenv("POSTGRES_HOST"), 5432, "postgres")
+		//"postgres", "postgres", "localhost", 5432, "postgres")
+		"postgres", "postgres", os.Getenv("POSTGRES_HOST"), 5432, "postgres")
 	s.db, err = sql.Open("postgres", connectionString)
 	s.Require().NoError(err)
 
 	// Подключение к RMQ
+	RabbitmqHost := os.Getenv("RABBITMQ_HOST")
+	URI := fmt.Sprintf("%s://%s:%s@%s:%d/", // "amqp://guest:guest@localhost:5672/"
+		"amqp", "guest", "guest", RabbitmqHost, 5672,
+	)
 
 	eventsConsMq, err := rmq.New(
-		//conf.RMQ.URI,
-		//conf.Queues.Events.ExchangeName,
-		//conf.Queues.Events.ExchangeType,
-		//conf.Queues.Events.QueueName,
-		//conf.Queues.Events.BindingKey,
-		//conf.RMQ.ReConnect.MaxElapsedTime,
-		//conf.RMQ.ReConnect.InitialInterval,
-		//conf.RMQ.ReConnect.Multiplier,
-		//conf.RMQ.ReConnect.MaxInterval,
-		"amqp://guest:guest@localhost:5672/",
+		//"amqp://guest:guest@localhost:5672/",
+		URI,
 		"events",
 		"fanout",
 		"notifications",

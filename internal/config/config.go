@@ -12,8 +12,8 @@ type Configure interface {
 }
 
 type LoggerConf struct {
-	Level       string `envconfig:"logger_level" default:"info" required:"true"`
-	Development bool   `envconfig:"logger_development" default:"false" required:"true"`
+	Level       string `json:"loggerLevel"`
+	Development bool   `json:"loggerDevelopment"`
 }
 
 type StorageConf struct {
@@ -34,11 +34,11 @@ type GRPC struct {
 }
 
 type RMQ struct {
-	RabbitmqProtocol string `json:"rabbitmq_protocol"` //nolint:tagliatelle
-	RabbitmqUsername string `json:"rabbitmq_username"` //nolint:tagliatelle
-	RabbitmqPassword string `json:"rabbitmq_password"` //nolint:tagliatelle
-	RabbitmqHost     string `json:"rabbitmq_host"`     //nolint:tagliatelle
-	RabbitmqPort     int    `json:"rabbitmq_port"`     //nolint:tagliatelle
+	RabbitmqProtocol string `json:"rabbitmqProtocol"`
+	RabbitmqUsername string `json:"rabbitmqUsername"`
+	RabbitmqPassword string `json:"rabbitmqPassword"`
+	RabbitmqHost     string `json:"rabbitmqHost"`
+	RabbitmqPort     int    `json:"rabbitmqPort"`
 	ReConnect        struct {
 		MaxElapsedTime  string  `json:"maxElapsedTime"`
 		InitialInterval string  `json:"initialInterval"`
